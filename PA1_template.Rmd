@@ -5,21 +5,189 @@ output:
     keep_md: true
 ---
 
+--- ## Global setup
+```{r results='hide'}
+require(knitr)
+require(plyr)
+require(ggplot2)
+require(lattice)
+
+library(knitr)
+require(dplyr)
+require(ggplot2)
+require(lattice)
+
+## opts_chunk$set(message=FALSE, fig.width = 6, fig.height = 6)
+```
 
 ## Loading and preprocessing the data
+```{r}
+# Load the data.
+activity = read.csv(file = "activity.csv", header = TRUE)
 
+# Makes sure date field contains date by transforming string to date format
+activity <- transform(activity, date = as.Date(date))
+
+## Remove the NA rows
+tidyData <- activity[complete.cases(activity), ]
+```
 
 
 ## What is mean total number of steps taken per day?
 
+### Part 1. Calculate the total number of steps taken per day
+```{r}
+stats <- activity %>% 
+    filter(!is.na(steps)) %>%
+    group_by(date) %>% 
+    summarise(steps = sum(steps))
+```
 
 
+### Part 2. Make a histogram of the total number of steps taken each day
+```{r}
+g = ggplot(tidyData, aes(x=date, y=steps))
+g + geom_histogram(stat="identity") + 
+    xlab("Dates") + 
+    ylab("Steps") +
+    labs(title= "Total numbers of Steps per day")
+```
+
+### Part 3. Calculate and report the mean and median of the total number of steps taken per day
+
+```{r}
+stats <- activity %>% 
+    filter(!is.na(steps)) %>%
+    group_by(date) %>% 
+    summarise(mean = mean(steps), median = median(steps))
+
+head(stats)
+```
 ## What is the average daily activity pattern?
+
+### Part 1. Make a time series plot 
+```{r}
+daily <- tidyData %>%
+    group_by(interval) %>%
+    summarize(steps=mean(steps))
+
+plot(daily, main = "Average Number Of Steps Taken", type = "l")
+```
+
+### Part 2. Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+
+```{r}
+daily[which.max(daily$steps), ]$interval
+```
 
 
 
 ## Imputing missing values
 
+### Part 1.Calculate and report the total number of missing values in the dataset
+```{r}
+sum(is.na(activity))
+```
 
+
+## Part 2. Devise a strategy for filling in all of the missing values in the dataset.The strategy does not need to be sophisticated. 
+
+Since the assignment DOES NOT require a specify strategy but leave leverage to the student, I chose to set the NA value to zero.
+
+## Part 3. Create a new dataset that is equal to the original dataset but with the missing data filled in.
+```{r}
+## Clone the original data
+cleanData <- activity
+
+## Set the NA values to zero
+cleanData$steps[is.na(activity$steps)] <- 0
+```
+
+## Part 4. Make a histogram of the total number of steps taken each day
+
+```{r}
+histData <- cleanData %>%
+          group_by(date) %>%
+          summarize(steps = sum(steps))
+
+g <- ggplot(histData, aes(x=date, y=steps))
+g  + geom_histogram(stat="identity") + 
+    xlab("Dates") + 
+    ylab("Imputed Steps") +
+    labs(title= "Total numbers of Steps per day (missing data zeroed)")    
+```
+
+Calculate and report the mean and median total number of steps taken per day.
+```{r}
+    cleanData %>% 
+    group_by(date) %>% 
+    summarise(mean=mean(steps), median = median(steps)) %>%
+    print
+```
+
+Do these values differ from the estimates from the first part of the assignment?
+What is the impact of imputing missing data on the estimates of the total daily number of steps?
+
+
+To answer this question i calculate the mean and median for all the observations of both dataset (activity, clenData) and compare the results.
+```{r}
+mean_of_original_data <- mean(activity$steps, na.rm = T)
+mean_of_corrected_data <- mean(cleanData$steps)
+
+mean_of_original_data - mean_of_corrected_data
+```
+The above result is consisten because the mean of the corrected set has
+to be smaller given the fact that the corrected dataset (cleanData) contains more entry but all with value zero.
+
+```{r}
+median_of_original_data <- median(activity$steps, na.rm = T)
+median_of_corrected_data <- median(cleanData$steps)
+
+median_of_original_data - median_of_corrected_data
+```
+The median is not affected because the correction proposed has introduced
+entry with value zero. This is value is equal to the previous value of the median, so that it introduces no changes.
+
+
+```{r}
+summary(activity[complete.cases(activity),]$steps) - summary(cleanData$steps)
+```
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+### Part 1. Create a new factor variable in the dataset with two levels - "weekday" and "weekend" indicating whether a given date is a weekday or weekend day.
+
+I write a function that determines whether the given input date is a weekend.
+```{r}
+dayofweek <- function(date) {
+    if (weekdays(as.Date(date)) %in% c("Saturday", "Sunday")) {
+        "weekend"
+    } else {
+        "weekday"
+    }
+}
+
+cleanData$dayType <- as.factor(sapply(cleanData$date, dayofweek))
+```
+
+
+### Part 2. Make a panel plot containing a time series plot.
+
+Make a panel plot containing a time series plot(i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). 
+
+```{r, fig.width = 6, fig.height = 6}
+stepsOnWeekend <- cleanData %>%
+            filter(dayType == "weekend") %>%
+            group_by(interval) %>%
+            summarise( mean = mean(steps))
+
+stepsOnWeekday <- cleanData %>%
+            filter(dayType == "weekday") %>%
+            group_by(interval) %>%
+            summarise( mean = mean(steps))
+
+par(mfrow = c(2, 1))
+plot(stepsOnWeekend, type = "l", main = "Weekend", ylab = "mean no. steps")
+plot(stepsOnWeekday, type = "l", main = "weekday", ylab = "mean no. steps")
+
+```
