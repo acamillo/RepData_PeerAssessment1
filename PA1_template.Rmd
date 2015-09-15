@@ -175,19 +175,29 @@ cleanData$dayType <- as.factor(sapply(cleanData$date, dayofweek))
 
 Make a panel plot containing a time series plot(i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). 
 
-```{r, fig.width = 6, fig.height = 6}
+```{r}
+# Calculate the average number of steps broken down by day of weekend (Sat, Sun).
 stepsOnWeekend <- cleanData %>%
             filter(dayType == "weekend") %>%
             group_by(interval) %>%
             summarise( mean = mean(steps))
 
+# Calculate the average number of steps broken down by day of every other day (Mom-Fri).
 stepsOnWeekday <- cleanData %>%
             filter(dayType == "weekday") %>%
             group_by(interval) %>%
             summarise( mean = mean(steps))
 
-par(mfrow = c(2, 1))
-plot(stepsOnWeekend, type = "l", main = "Weekend", ylab = "mean no. steps")
-plot(stepsOnWeekday, type = "l", main = "weekday", ylab = "mean no. steps")
+stepsOnWeekend$weekDay <- "weekend"
+stepsOnWeekday$weekDay <- "weekday"
 
+# Join the two set into a unique data frame
+weekSteps <- rbind(stepsOnWeekend, stepsOnWeekday)
+
+# Generate the panel plot parted by weekDay
+xyplot((mean) ~ interval | weekDay, 
+       data = weekSteps, type = "l", 
+       main = "Plot of Interval vs. Average Number of Steps", 
+       xlab = "Interval",  
+       ylab = "Number of steps", layout=c(1,2))
 ```
