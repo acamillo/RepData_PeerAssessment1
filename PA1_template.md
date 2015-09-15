@@ -48,9 +48,9 @@ stats <- activity %>%
 ### Part 2. Make a histogram of the total number of steps taken each day
 
 ```r
-g = ggplot(stats, aes(x=date, y=steps))
-g + geom_histogram(stat="identity") + 
-    xlab("Dates") + 
+g = ggplot(stats, aes(steps))
+g + geom_histogram(color="black") + 
+    xlab("Steps per day") + 
     ylab("Steps") +
     labs(title= "Total numbers of Steps per day")
 ```
@@ -144,11 +144,11 @@ histData <- cleanData %>%
           group_by(date) %>%
           summarize(steps = sum(steps))
 
-g <- ggplot(histData, aes(x=date, y=steps))
-g  + geom_histogram(stat="identity") + 
-    xlab("Dates") + 
-    ylab("Imputed Steps") +
-    labs(title= "Total numbers of Steps per day (missing data zeroed)")    
+g = ggplot(histData, aes(steps))
+g + geom_histogram(color="black") + 
+    xlab("Steps per day") + 
+    ylab("Steps") +
+    labs(title= "Total numbers of Steps per day (missing data zeroed)")
 ```
 
 ![plot of chunk unnamed-chunk-10](figure/unnamed-chunk-10-1.png) 
